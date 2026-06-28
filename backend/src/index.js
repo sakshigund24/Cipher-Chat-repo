@@ -58,6 +58,13 @@ app.use("/api/groups", groupRoutes);
 app.use("/api/search", searchRoutes);
 app.use("/api/calls", callRoutes);
 
+app.get("/", (req, res) => {
+  res.json({
+    success: true,
+    message: "SecureChat Backend is Running 🚀",
+  });
+});
+
 // ─── HEALTH CHECK ──────────────────────────────────────────
 app.get("/health", (req, res) => res.json({ status: "ok", timestamp: new Date() }));
 
