@@ -6,7 +6,7 @@ import ChatContainer from "../components/ChatContainer.jsx";
 import GroupChatContainer from "../components/GroupChatContainer.jsx";
 import { MessageSquare } from "lucide-react";
 
-const MIN_SIDEBAR_W = 330;   // px — narrowest allowed
+const MIN_SIDEBAR_W = 350;   // px — narrowest allowed
 const MAX_SIDEBAR_W = 520;   // px — widest allowed
 const DEFAULT_W     = 320;   // px — initial width
 
