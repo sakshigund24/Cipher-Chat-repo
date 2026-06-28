@@ -69,7 +69,9 @@ const Sidebar = () => {
       <div className="px-3 pt-3 pb-2 border-b border-base-300 space-y-2 shrink-0">
         {/* App name + tabs */}
         <div className="flex items-center gap-2">
-          <span className="font-bold text-base hidden lg:block flex-1">Cipher Chat</span>
+          <span className="hidden lg:block text-xl font-bold whitespace-nowrap shrink-0">
+          Cipher Chat
+          </span>
           <div className="flex gap-1 flex-1 lg:flex-none justify-around lg:justify-start">
             {tabs.map(({ id, icon: Icon, label }) => (
               <button
