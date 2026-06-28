@@ -1,0 +1,21 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root { scroll-behavior: smooth; }
+  * { box-sizing: border-box; }
+}
+
+@layer utilities {
+  .scrollbar-thin::-webkit-scrollbar { width: 4px; }
+  .scrollbar-thin::-webkit-scrollbar-track { background: transparent; }
+  .scrollbar-thin::-webkit-scrollbar-thumb { background: rgba(128,128,128,0.4); border-radius: 2px; }
+  .scrollbar-thin::-webkit-scrollbar-thumb:hover { background: rgba(128,128,128,0.7); }
+  .no-scrollbar::-webkit-scrollbar { display: none; }
+  .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+  .chat-wallpaper { background-attachment: fixed; background-size: cover; }
+}
+
+/* Smooth transitions for theme change */
+*, *::before, *::after { transition: background-color 0.2s ease, border-color 0.2s ease; }
