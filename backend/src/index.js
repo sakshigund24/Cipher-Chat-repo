@@ -14,7 +14,7 @@ import authRoutes from "./routes/auth.route.js";
 import messageRoutes from "./routes/message.route.js";
 import groupRoutes from "./routes/group.route.js";
 import searchRoutes from "./routes/search.route.js";
-import callRoutes from "./routes/call.route.js";
+// import callRoutes from "./routes/call.route.js";
 
 dotenv.config();
 
@@ -71,7 +71,7 @@ app.use("/api/auth", authRoutes);
 app.use("/api/messages", messageRoutes);
 app.use("/api/groups", groupRoutes);
 app.use("/api/search", searchRoutes);
-app.use("/api/calls", callRoutes);
+// app.use("/api/calls", callRoutes);
 
 app.get("/", (req, res) => {
   res.json({

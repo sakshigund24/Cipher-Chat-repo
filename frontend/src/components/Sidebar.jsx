@@ -2,11 +2,11 @@ import { useEffect, useState } from "react";
 import { useChatStore, formatConvTime, buildPreview } from "../store/useChatStore.js";
 import { useGroupStore } from "../store/useGroupStore.js";
 import { useAuthStore } from "../store/useAuthStore.js";
-import { useCallStore } from "../store/useCallStore.js";
+// import { useCallStore } from "../store/useCallStore.js";
 import CreateGroupModal from "./modals/CreateGroupModal.jsx";
-import CallLogsPage from "../pages/CallLogsPage.jsx";
+// import CallLogsPage from "../pages/CallLogsPage.jsx";
 import SidebarSkeleton from "./skeletons/SidebarSkeleton.jsx";
-import { Check, CheckCheck, Users, Hash, Phone, MessageSquare, Plus, Search } from "lucide-react";
+import { Check, CheckCheck, Users, Hash, MessageSquare, Plus, Search } from "lucide-react";
 
 // ── Tick for sidebar (last message sent by me) ──────────────
 const SidebarTick = ({ status }) => {
@@ -28,7 +28,7 @@ const Sidebar = () => {
 
   const { groups, getMyGroups, selectedGroup, setSelectedGroup } = useGroupStore();
   const { onlineUsers, authUser } = useAuthStore();
-  const { getCallHistory } = useCallStore();
+  // const { getCallHistory } = useCallStore();
 
   const [activeTab, setActiveTab] = useState("chats");
   const [search, setSearch] = useState("");
@@ -43,9 +43,9 @@ const Sidebar = () => {
     return () => unsubscribeFromMessages();
   }, []);
 
-  useEffect(() => {
-    if (activeTab === "calls") getCallHistory();
-  }, [activeTab]);
+  // useEffect(() => {
+  //   if (activeTab === "calls") getCallHistory();
+  // }, [activeTab]);
 
   // ── Filtered lists ──────────────────────────────────────
   const filteredConvs = conversations.filter((c) =>
@@ -59,7 +59,7 @@ const Sidebar = () => {
   const tabs = [
     { id: "chats",  icon: MessageSquare, label: "Chats" },
     { id: "groups", icon: Hash,          label: "Groups" },
-    { id: "calls",  icon: Phone,         label: "Calls" },
+    // { id: "calls",  icon: Phone,         label: "Calls" },
   ];
 
   return (
@@ -89,7 +89,7 @@ const Sidebar = () => {
         </div>
 
         {/* Search */}
-        {activeTab !== "calls" && (
+        {(
           <div className="relative hidden lg:block">
             <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-base-content/40" />
             <input

@@ -6,7 +6,7 @@ import ChatContainer from "../components/ChatContainer.jsx";
 import GroupChatContainer from "../components/GroupChatContainer.jsx";
 import { MessageSquare } from "lucide-react";
 
-const MIN_SIDEBAR_W = 350;   // px — narrowest allowed
+const MIN_SIDEBAR_W = 320;   // px — narrowest allowed
 const MAX_SIDEBAR_W = 520;   // px — widest allowed
 const DEFAULT_W     = 320;   // px — initial width
 
@@ -22,7 +22,7 @@ const NoChatSelected = () => (
       </p>
     </div>
     <div className="flex flex-wrap gap-2 justify-center mt-2">
-      {["End-to-End Encrypted", "Real-time Messaging", "File Sharing", "Video Calls"].map((f) => (
+      {["End-to-End Encrypted", "Real-time Messaging", "File Sharing"].map((f) => (
         <span key={f} className="badge badge-outline badge-primary text-xs">{f}</span>
       ))}
     </div>

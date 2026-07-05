@@ -13,17 +13,12 @@ const io = new Server(server, {
   },
 });
 
-// Maps
-const userSocketMap = {}; // userId -> socketId
-const socketUserMap = {}; // socketId -> userId
-const activeCallRooms = {}; // roomId -> { participants, callType }
+const userSocketMap  = {};  // userId  -> socketId
+const socketUserMap  = {};  // socketId -> userId
+// const activeCallRooms = {}; // roomId  -> { participants, callType }
 
 export function getReceiverSocketId(userId) {
-  return userSocketMap[userId.toString()];
-}
-
-export function getUserIdFromSocket(socketId) {
-  return socketUserMap[socketId];
+  return userSocketMap[userId?.toString()];
 }
 
 io.on("connection", async (socket) => {
@@ -32,25 +27,19 @@ io.on("connection", async (socket) => {
 
   userSocketMap[userId] = socket.id;
   socketUserMap[socket.id] = userId;
-
-  // Join personal room
   socket.join(`user_${userId}`);
 
-  // Update online status in DB
   try {
     await User.findByIdAndUpdate(userId, { isOnline: true, lastSeen: new Date() });
-  } catch (e) {}
+  } catch {}
 
-  // Broadcast online users
   io.emit("getOnlineUsers", Object.keys(userSocketMap));
 
-  // ─── TYPING INDICATORS ───────────────────────────────
+  // ─── TYPING ──────────────────────────────────────────
   socket.on("typing", ({ receiverId, groupId }) => {
     if (receiverId) {
-      const receiverSocketId = getReceiverSocketId(receiverId);
-      if (receiverSocketId) {
-        io.to(receiverSocketId).emit("userTyping", { senderId: userId });
-      }
+      const sid = getReceiverSocketId(receiverId);
+      if (sid) io.to(sid).emit("userTyping", { senderId: userId });
     }
     if (groupId) {
       socket.to(`group_${groupId}`).emit("userTyping", { senderId: userId, groupId });
@@ -59,32 +48,23 @@ io.on("connection", async (socket) => {
 
   socket.on("stopTyping", ({ receiverId, groupId }) => {
     if (receiverId) {
-      const receiverSocketId = getReceiverSocketId(receiverId);
-      if (receiverSocketId) {
-        io.to(receiverSocketId).emit("userStopTyping", { senderId: userId });
-      }
+      const sid = getReceiverSocketId(receiverId);
+      if (sid) io.to(sid).emit("userStopTyping", { senderId: userId });
     }
     if (groupId) {
       socket.to(`group_${groupId}`).emit("userStopTyping", { senderId: userId, groupId });
     }
   });
 
-  // ─── GROUP ROOMS ──────────────────────────────────────
-  socket.on("joinGroup", (groupId) => {
-    socket.join(`group_${groupId}`);
-  });
+  // ─── GROUPS ───────────────────────────────────────────
+  socket.on("joinGroup",  (groupId) => socket.join(`group_${groupId}`));
+  socket.on("leaveGroup", (groupId) => socket.leave(`group_${groupId}`));
 
-  socket.on("leaveGroup", (groupId) => {
-    socket.leave(`group_${groupId}`);
-  });
-
-  // ─── MESSAGE READ RECEIPTS ────────────────────────────
+  // ─── READ RECEIPTS ────────────────────────────────────
   socket.on("messageSeen", ({ messageId, senderId, groupId }) => {
     if (senderId) {
-      const senderSocketId = getReceiverSocketId(senderId);
-      if (senderSocketId) {
-        io.to(senderSocketId).emit("messageSeenUpdate", { messageId, seenBy: userId });
-      }
+      const sid = getReceiverSocketId(senderId);
+      if (sid) io.to(sid).emit("messageSeenUpdate", { messageId, seenBy: userId });
     }
     if (groupId) {
       socket.to(`group_${groupId}`).emit("messageSeenUpdate", { messageId, seenBy: userId });
@@ -92,104 +72,100 @@ io.on("connection", async (socket) => {
   });
 
   socket.on("messagesDelivered", ({ senderId }) => {
-    const senderSocketId = getReceiverSocketId(senderId);
-    if (senderSocketId) {
-      io.to(senderSocketId).emit("messagesDeliveredUpdate", { toUserId: userId });
-    }
+    const sid = getReceiverSocketId(senderId);
+    if (sid) io.to(sid).emit("messagesDeliveredUpdate", { toUserId: userId });
   });
 
-  // ─── WEBRTC VIDEO/VOICE CALL SIGNALING ───────────────
-  socket.on("callUser", ({ receiverId, callType, signalData, callerInfo, roomId }) => {
-    const receiverSocketId = getReceiverSocketId(receiverId);
-    if (receiverSocketId) {
-      io.to(receiverSocketId).emit("incomingCall", {
-        callerId: userId,
-        callType,
-        signalData,
-        callerInfo,
-        roomId,
-      });
-    }
-  });
+  // // ─── WEBRTC SIGNALING ─────────────────────────────────
+  // //
+  // // FLOW (trickle=false — one clean offer/answer round):
+  // //
+  // //  Caller                          Server                        Callee
+  // //  ──────                          ──────                        ──────
+  // //  callUser(receiverId, signalData) ──► incomingCall(signalData)
+  // //                                                    acceptCall()
+  // //  callAccepted(signalData)  ◄──   answerCall(callerId, signalData)
+  // //  peer.signal(answer SDP)
+  // //  P2P established ◄─────────────────────────────────────────── stream
 
-  socket.on("answerCall", ({ callerId, signalData, roomId }) => {
-    const callerSocketId = getReceiverSocketId(callerId);
-    if (callerSocketId) {
-      io.to(callerSocketId).emit("callAccepted", { signalData, answererId: userId, roomId });
-    }
-  });
+  // socket.on("callUser", ({ receiverId, callType, signalData, callerInfo, roomId }) => {
+  //   const sid = getReceiverSocketId(receiverId);
+  //   if (sid) {
+  //     io.to(sid).emit("incomingCall", {
+  //       callerId: userId,
+  //       callType,
+  //       signalData,   // SDP offer — callee must signal this to their peer
+  //       callerInfo,
+  //       roomId,
+  //     });
+  //   }
+  // });
 
-  socket.on("rejectCall", ({ callerId, roomId }) => {
-    const callerSocketId = getReceiverSocketId(callerId);
-    if (callerSocketId) {
-      io.to(callerSocketId).emit("callRejected", { rejecterId: userId, roomId });
-    }
-  });
+  // socket.on("answerCall", ({ callerId, signalData, roomId }) => {
+  //   const sid = getReceiverSocketId(callerId);
+  //   if (sid) {
+  //     io.to(sid).emit("callAccepted", { signalData, answererId: userId, roomId });
+  //   }
+  // });
 
-  socket.on("endCall", ({ peerId, roomId }) => {
-    const peerSocketId = getReceiverSocketId(peerId);
-    if (peerSocketId) {
-      io.to(peerSocketId).emit("callEnded", { endedBy: userId, roomId });
-    }
-    // Group call
-    if (roomId && activeCallRooms[roomId]) {
-      socket.to(`call_${roomId}`).emit("callEnded", { endedBy: userId, roomId });
-      socket.leave(`call_${roomId}`);
-    }
-  });
+  // socket.on("rejectCall", ({ callerId, roomId }) => {
+  //   const sid = getReceiverSocketId(callerId);
+  //   if (sid) io.to(sid).emit("callRejected", { rejecterId: userId, roomId });
+  // });
 
-  socket.on("iceCandidate", ({ peerId, candidate, roomId }) => {
-    const peerSocketId = getReceiverSocketId(peerId);
-    if (peerSocketId) {
-      io.to(peerSocketId).emit("iceCandidate", { candidate, fromId: userId });
-    }
-  });
+  // socket.on("endCall", ({ peerId, roomId }) => {
+  //   if (peerId) {
+  //     const sid = getReceiverSocketId(peerId);
+  //     if (sid) io.to(sid).emit("callEnded", { endedBy: userId, roomId });
+  //   }
+  //   if (roomId && activeCallRooms[roomId]) {
+  //     socket.to(`call_${roomId}`).emit("callEnded", { endedBy: userId, roomId });
+  //     socket.leave(`call_${roomId}`);
+  //   }
+  // });
 
-  // Group call
-  socket.on("joinCallRoom", ({ roomId, callType, userId: uid }) => {
-    socket.join(`call_${roomId}`);
-    if (!activeCallRooms[roomId]) {
-      activeCallRooms[roomId] = { participants: [], callType };
-    }
-    activeCallRooms[roomId].participants.push(uid || userId);
-    socket.to(`call_${roomId}`).emit("userJoinedCall", { userId: uid || userId, roomId });
-    // Send current participants to newly joined user
-    socket.emit("callRoomParticipants", {
-      participants: activeCallRooms[roomId].participants,
-      roomId,
-    });
-  });
+  // // Trickle ICE candidates (used when trickle=true)
+  // socket.on("iceCandidate", ({ peerId, candidate }) => {
+  //   const sid = getReceiverSocketId(peerId);
+  //   if (sid) io.to(sid).emit("iceCandidate", { candidate, fromId: userId });
+  // });
 
-  socket.on("leaveCallRoom", ({ roomId }) => {
-    socket.leave(`call_${roomId}`);
-    if (activeCallRooms[roomId]) {
-      activeCallRooms[roomId].participants = activeCallRooms[roomId].participants.filter(
-        (id) => id !== userId
-      );
-      socket.to(`call_${roomId}`).emit("userLeftCall", { userId, roomId });
-      if (activeCallRooms[roomId].participants.length === 0) {
-        delete activeCallRooms[roomId];
-      }
-    }
-  });
+  // // Group call rooms
+  // socket.on("joinCallRoom", ({ roomId, callType }) => {
+  //   socket.join(`call_${roomId}`);
+  //   if (!activeCallRooms[roomId]) activeCallRooms[roomId] = { participants: [], callType };
+  //   if (!activeCallRooms[roomId].participants.includes(userId)) {
+  //     activeCallRooms[roomId].participants.push(userId);
+  //   }
+  //   socket.to(`call_${roomId}`).emit("userJoinedCall", { userId, roomId });
+  //   socket.emit("callRoomParticipants", { participants: activeCallRooms[roomId].participants, roomId });
+  // });
 
-  // Screen sharing signal
-  socket.on("screenShareSignal", ({ peerId, signal }) => {
-    const peerSocketId = getReceiverSocketId(peerId);
-    if (peerSocketId) {
-      io.to(peerSocketId).emit("screenShareSignal", { signal, fromId: userId });
-    }
+  // socket.on("leaveCallRoom", ({ roomId }) => {
+  //   socket.leave(`call_${roomId}`);
+  //   if (activeCallRooms[roomId]) {
+  //     activeCallRooms[roomId].participants = activeCallRooms[roomId].participants.filter(
+  //       (id) => id !== userId
+  //     );
+  //     socket.to(`call_${roomId}`).emit("userLeftCall", { userId, roomId });
+  //     if (activeCallRooms[roomId].participants.length === 0) {
+  //       delete activeCallRooms[roomId];
+  //     }
+  //   }
+  // });
+
+  // ─── PROFILE UPDATE BROADCAST ─────────────────────────
+  socket.on("broadcastProfileUpdate", (data) => {
+    socket.broadcast.emit("userProfileUpdated", data);
   });
 
   // ─── DISCONNECT ───────────────────────────────────────
   socket.on("disconnect", async () => {
     delete userSocketMap[userId];
     delete socketUserMap[socket.id];
-
     try {
       await User.findByIdAndUpdate(userId, { isOnline: false, lastSeen: new Date() });
-    } catch (e) {}
-
+    } catch {}
     io.emit("getOnlineUsers", Object.keys(userSocketMap));
     io.emit("userOffline", { userId, lastSeen: new Date() });
   });
