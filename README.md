@@ -24,7 +24,6 @@ Cipher Chat is a full-stack real-time messaging platform with end-to-end encrypt
 | 🗑️ Delete Messages | Delete for me / delete for everyone |
 | ✅ Read Receipts | Sent → Delivered → Seen indicators |
 | 📎 File Sharing | Images, PDFs, DOCX, PPT, ZIP, Videos (Cloudinary) |
-| 🎥 Video & Voice Calls | WebRTC peer-to-peer calls with screen sharing |
 | 🔍 Search | Search users, groups, and messages |
 | 🎨 Theme Customization | 30+ DaisyUI themes + chat wallpapers |
 | 🔒 E2E Encryption | RSA key exchange + AES-GCM message encryption |
@@ -48,15 +47,6 @@ React (Vite) → Zustand Stores → Axios (REST) + Socket.IO Client
 Express.js → Routes → Controllers → Models (Mongoose) → MongoDB
                 ↕
            Socket.IO Server (Real-time events)
-```
-
-### WebRTC Architecture
-```
-Caller → Socket.IO Signaling → Callee
-          ↓ SDP Offer/Answer
-        SimplePeer (WebRTC)
-          ↓ ICE Candidates
-        Direct P2P Connection
 ```
 
 ### Encryption Architecture
@@ -88,7 +78,6 @@ secure-chat-upgraded/
 │   │   │   ├── auth.controller.js
 │   │   │   ├── message.controller.js
 │   │   │   ├── group.controller.js
-│   │   │   ├── call.controller.js
 │   │   │   └── search.controller.js
 │   │   ├── lib/
 │   │   │   ├── db.js
@@ -100,14 +89,12 @@ secure-chat-upgraded/
 │   │   ├── models/
 │   │   │   ├── user.model.js
 │   │   │   ├── message.model.js
-│   │   │   ├── group.model.js
-│   │   │   └── call.model.js
+│   │   │   └── group.model.js
 │   │   ├── routes/
 │   │   │   ├── auth.route.js
 │   │   │   ├── message.route.js
 │   │   │   ├── group.route.js
-│   │   │   ├── search.route.js
-│   │   │   └── call.route.js
+│   │   │   └── search.route.js
 │   │   └── index.js
 │   ├── .env.example
 │   └── package.json
@@ -115,9 +102,6 @@ secure-chat-upgraded/
 └── frontend/
     ├── src/
     │   ├── components/
-    │   │   ├── calls/
-    │   │   │   ├── CallWindow.jsx
-    │   │   │   └── IncomingCallModal.jsx
     │   │   ├── modals/
     │   │   │   ├── CreateGroupModal.jsx
     │   │   │   └── GroupInfoModal.jsx
@@ -147,8 +131,7 @@ secure-chat-upgraded/
     │   │   ├── useAuthStore.js
     │   │   ├── useChatStore.js
     │   │   ├── useGroupStore.js
-    │   │   ├── useThemeStore.js
-    │   │   └── useCallStore.js
+    │   │   └── useThemeStore.js
     │   ├── App.jsx
     │   ├── main.jsx
     │   └── index.css
