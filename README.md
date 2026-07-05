@@ -6,7 +6,7 @@
 
 ## 📋 Project Overview
 
-Cipher Chat is a full-stack real-time messaging platform with end-to-end encryption, group chats, video/voice calling, file sharing, and much more. It is built for performance, security, and a great user experience across desktop and mobile.
+Cipher Chat is a full-stack real-time messaging platform with end-to-end encryption, group chats, file sharing, and much more. It is built for performance, security, and a great user experience across desktop and mobile.
 
 ---
 
