@@ -18,41 +18,40 @@ export const getConversations = async (req, res) => {
   try {
     const myId = req.user._id;
 
-    // Single aggregation: find all users I have exchanged messages with,
-    // their last message, and unread count
+    // Existing conversations
     const conversations = await Message.aggregate([
-      // 1. Only direct messages involving me
       {
         $match: {
           isDeletedForEveryone: false,
           $or: [{ senderId: myId }, { receiverId: myId }],
         },
       },
-      // 2. Determine the "peer" userId for each message
       {
         $addFields: {
           peer: {
-            $cond: [{ $eq: ["$senderId", myId] }, "$receiverId", "$senderId"],
+            $cond: [
+              { $eq: ["$senderId", myId] },
+              "$receiverId",
+              "$senderId",
+            ],
           },
         },
       },
-      // 3. Sort newest first so $last gives the latest message
       { $sort: { createdAt: -1 } },
-      // 4. Group per peer
       {
         $group: {
           _id: "$peer",
           lastMessageId: { $first: "$_id" },
-          lastText:      { $first: "$text" },
-          lastFileType:  { $first: "$fileType" },
-          lastImage:     { $first: "$image" },
-          lastFileName:  { $first: "$fileName" },
-          lastMsgType:   { $first: "$messageType" },
-          lastDeleted:   { $first: "$isDeletedForEveryone" },
-          lastSenderId:  { $first: "$senderId" },
-          lastStatus:    { $first: "$status" },
+          lastText: { $first: "$text" },
+          lastFileType: { $first: "$fileType" },
+          lastImage: { $first: "$image" },
+          lastFileName: { $first: "$fileName" },
+          lastMsgType: { $first: "$messageType" },
+          lastDeleted: { $first: "$isDeletedForEveryone" },
+          lastSenderId: { $first: "$senderId" },
+          lastStatus: { $first: "$status" },
           lastCreatedAt: { $first: "$createdAt" },
-          // Count messages from peer that I haven't seen
+
           unreadCount: {
             $sum: {
               $cond: [
@@ -60,7 +59,11 @@ export const getConversations = async (req, res) => {
                   $and: [
                     { $eq: ["$receiverId", myId] },
                     { $ne: ["$status", "seen"] },
-                    { $not: { $in: [myId, { $ifNull: ["$deletedForUsers", []] }] } },
+                    {
+                      $not: {
+                        $in: [myId, { $ifNull: ["$deletedForUsers", []] }],
+                      },
+                    },
                   ],
                 },
                 1,
@@ -70,9 +73,7 @@ export const getConversations = async (req, res) => {
           },
         },
       },
-      // 5. Sort conversations by latest message
       { $sort: { lastCreatedAt: -1 } },
-      // 6. Lookup peer user info
       {
         $lookup: {
           from: "users",
@@ -82,7 +83,6 @@ export const getConversations = async (req, res) => {
         },
       },
       { $unwind: "$user" },
-      // 7. Project only what we need
       {
         $project: {
           _id: 0,
@@ -111,7 +111,27 @@ export const getConversations = async (req, res) => {
       },
     ]);
 
-    res.json(conversations);
+    // IDs of users already having conversations
+    const chattedUserIds = conversations.map((c) => c.user._id);
+
+    // Users without conversations
+    const remainingUsers = await User.find({
+      _id: {
+        $nin: [...chattedUserIds, myId],
+      },
+    })
+      .select(
+        "_id fullName profilePic isOnline lastSeen customStatus"
+      )
+      .sort({ fullName: 1 });
+
+    const emptyConversations = remainingUsers.map((user) => ({
+      user,
+      lastMessage: null,
+      unreadCount: 0,
+    }));
+
+    res.json([...conversations, ...emptyConversations]);
   } catch (error) {
     console.error("getConversations error:", error.message);
     res.status(500).json({ message: "Internal server error" });
