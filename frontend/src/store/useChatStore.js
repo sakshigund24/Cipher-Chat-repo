@@ -262,12 +262,16 @@ export const useChatStore = create((set, get) => ({
     if (!socket) return;
 
     socket.on("newMessage", (message) => {
-      const { selectedUser } = get();
-      const senderId = message.senderId?._id || message.senderId;
-      if (selectedUser && senderId === selectedUser._id) {
-        set((state) => ({ messages: [...state.messages, message] }));
-      }
-    });
+    console.log("NEW MESSAGE", message._id);
+    const { selectedUser } = get();
+    const senderId = message.senderId?._id || message.senderId;
+
+    if (selectedUser && senderId === selectedUser._id) {
+      set((state) => ({
+        messages: [...state.messages, message],
+      }));
+    }
+  });
 
     socket.on("conversationUpdated", (payload) => {
       get().upsertConversation(payload);
